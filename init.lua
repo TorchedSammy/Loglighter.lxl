@@ -1,8 +1,22 @@
 -- mod-version:2 -- lite-xl 2.0
 local core = require 'core'
+local config = require 'core.config'
 local common = require 'core.common'
 local style = require 'core.style'
 local LogView = require 'core.logview'
+
+local function merge(orig, tbl)
+	if tbl == nil then return orig end
+	for k, v in pairs(tbl) do
+		orig[k] = v
+	end
+
+	return orig
+end
+
+local conf = merge({
+	taggedOnly = false
+}, config.plugins.loglighter)
 
 local item_height_result = {}
 -- schem: type = color
@@ -42,10 +56,31 @@ local function is_expanded(item)
   return item_height.target == item_height.expanded
 end
 
+local function randomColor()
+	return {common.color(string.format('rgb(%d, %d, %d)', math.random(1, 255), math.random(1, 255), math.random(1, 255)))}
+end
+
+local function handleColor(typ)
+	local typeName = typ:lower()
+	if not itemTypes[typeName] then
+		itemTypes[typeName] = randomColor()
+	end
+
+	return itemTypes[typeName]
+end
+
+local function extractPluginName(path)
+	return path:match '.*/plugins/(.-)[\\/]'
+end
 
 local oldCoreLog = core.log
 function core.log(...)
-	print(common.serialize(debug.getinfo(2)))
+	if not conf.taggedOnly then
+		local dbgInfo = debug.getinfo(2)
+		if dbgInfo.short_src and dbgInfo.short_src:sub(0, USERDIR:len()) == USERDIR then
+			handleColor(extractPluginName(dbgInfo.short_src))
+		end
+	end
 	return oldCoreLog(...)
 	--[[
 	local vararg = ...
@@ -54,6 +89,17 @@ function core.log(...)
 		
 	end
 	]]--
+end
+
+local oldCoreLogQuiet = core.log_quiet
+function core.log_quiet(...)
+	if not conf.taggedOnly then
+		local dbgInfo = debug.getinfo(2)
+		if dbgInfo.short_src and dbgInfo.short_src:sub(0, USERDIR:len()) == USERDIR then
+			handleColor(extractPluginName(dbgInfo.short_src))
+		end
+	end
+	return oldCoreLogQuiet(...)
 end
 
 local datestr = os.date()
@@ -70,14 +116,14 @@ function LogView:draw()
 	local tw = style.font:get_width(datestr)
 	for _, item, x, y, w, h in self:each_item() do
 		local itemTyp = item.text:match '^%[(.+)%]'
-		if itemTyp then
-			local typeName = itemTyp:lower()
-			if not itemTypes[typeName] then
-				itemTypes[typeName] = {common.color(string.format('rgb(%d, %d, %d)', math.random(1, 255), math.random(1, 255), math.random(1, 255)))}
-			end
-			local color = itemTypes[typeName]
-			renderer.draw_rect(x, y, w, h, color)
+		if not conf.taggedOnly then
+			local plug = extractPluginName(item.at)
+			color = handleColor(itemTyp or plug)
+		else
+			color = handleColor(itemTyp)
 		end
+
+		if color then renderer.draw_rect(x, y, w, h, color) end
 		core.push_clip_rect(x, y, w, h)
 		x = x + style.padding.x
 

@@ -61,6 +61,8 @@ local function randomColor()
 end
 
 local function handleColor(typ)
+	if not typ then return nil end
+
 	local typeName = typ:lower()
 	if not itemTypes[typeName] then
 		itemTypes[typeName] = randomColor()
@@ -115,9 +117,11 @@ function LogView:draw()
 
 	local tw = style.font:get_width(datestr)
 	for _, item, x, y, w, h in self:each_item() do
+		local color
 		local itemTyp = item.text:match '^%[(.+)%]'
 		if not conf.taggedOnly then
 			local plug = extractPluginName(item.at)
+			print(itemTyp, plug)
 			color = handleColor(itemTyp or plug)
 		else
 			color = handleColor(itemTyp)

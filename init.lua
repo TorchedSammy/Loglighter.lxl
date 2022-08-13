@@ -1,3 +1,4 @@
+-- mod-version:2 -- lite-xl 2.0
 local core = require 'core'
 local common = require 'core.common'
 local style = require 'core.style'
@@ -41,16 +42,19 @@ local function is_expanded(item)
   return item_height.target == item_height.expanded
 end
 
---[[
+
 local oldCoreLog = core.log
 function core.log(...)
+	print(common.serialize(debug.getinfo(2)))
+	return oldCoreLog(...)
+	--[[
 	local vararg = ...
 	local logOpt = vararg[#vararg]
 	if type(logOpt) == 'table' and logOpt.log_color then
 		
 	end
+	]]--
 end
-]]--
 
 local datestr = os.date()
 function LogView:draw()

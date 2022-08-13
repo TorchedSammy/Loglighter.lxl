@@ -57,7 +57,10 @@ local function is_expanded(item)
 end
 
 local function randomColor()
-	return {common.color(string.format('rgb(%d, %d, %d)', math.random(1, 255), math.random(1, 255), math.random(1, 255)))}
+	local r = math.random(1, 127) + 127
+	local g = math.random(1, 127) + 127
+	local b = math.random(1, 127) + 127
+	return {common.color(string.format('rgb(%d, %d, %d)', r, g, b))}
 end
 
 local function handleColor(typ)
